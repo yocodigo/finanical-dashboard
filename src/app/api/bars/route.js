@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { reshapeBars, summarize } from '@/lib/bars';
+import { parseBarsParams } from '@/lib/params';
 
 const DATA_URL = 'https://data.alpaca.markets/v2/stocks/bars';
 
@@ -17,13 +18,14 @@ export async function GET(request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const symbols = (searchParams.get('symbols') || 'AAPL,MSFT,SPY')
-    .split(',')
-    .map((s) => s.trim().toUpperCase())
-    .filter(Boolean)
-    .slice(0, 10);
-
-  const days = Math.min(Number(searchParams.get('days')) || 90, 365);
+    const parsed = parseBarsParams(searchParams);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message || 'Invalid parameters' },
+        { status: 400 }
+      );
+    }
+    const { symbols, days } = parsed.data;
 
   // Alpaca's free data feed is delayed, so end the window yesterday to avoid
   // requesting bars that do not exist yet.
