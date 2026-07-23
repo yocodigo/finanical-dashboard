@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { reshapeBars, summarize } from '@/lib/bars';
 import { parseBarsParams } from '@/lib/params';
+import { correlationMatrix } from '@/lib/correlation';
 
 const DATA_URL = 'https://data.alpaca.markets/v2/stocks/bars';
 
@@ -66,6 +67,13 @@ export async function GET(request) {
 
     const series = reshapeBars(bars);
     const summary = summarize(bars, symbols);
+
+    // Build { SYMBOL: closes[] } from the same bars, for correlation.
+    const closesBySymbol = {};
+    for (const symbol of Object.keys(bars)) {
+      closesBySymbol[symbol] = bars[symbol].map((b) => b.c);
+    }
+    const correlation = correlationMatrix(closesBySymbol);
 
     return NextResponse.json({
       symbols: summary.map((s) => s.symbol),
