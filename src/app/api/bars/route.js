@@ -46,14 +46,14 @@ export async function GET(request) {
 
   try {
     const res = await fetch(`${DATA_URL}?${query}`, {
-      headers: {
-        'APCA-API-KEY-ID': keyId,
-        'APCA-API-SECRET-KEY': secretKey,
-      },
-      cache: 'no-store',
-    });
+          headers: {
+            'APCA-API-KEY-ID': keyId,
+            'APCA-API-SECRET-KEY': secretKey,
+          },
+          next: { revalidate: 3600 },
+        });
 
-    if (!res.ok) {
+        if (!res.ok) {
       const detail = await res.text();
       return NextResponse.json(
         { error: `Alpaca returned ${res.status}`, detail: detail.slice(0, 500) },
