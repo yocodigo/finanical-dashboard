@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { reshapeBars, summarize } from '@/lib/bars';
 
 const DATA_URL = 'https://data.alpaca.markets/v2/stocks/bars';
 
@@ -61,36 +62,8 @@ export async function GET(request) {
     const json = await res.json();
     const bars = json.bars || {};
 
-    // Merge per-symbol bar arrays into rows keyed by date:
-    //   [{ date: '2026-07-01', AAPL: 210.4, MSFT: 505.1 }, ...]
-    const rows = new Map();
-    for (const symbol of Object.keys(bars)) {
-      for (const bar of bars[symbol]) {
-        const date = bar.t.slice(0, 10);
-        if (!rows.has(date)) rows.set(date, { date });
-        rows.get(date)[symbol] = bar.c;
-      }
-    }
-
-    const series = Array.from(rows.values()).sort((a, b) =>
-      a.date.localeCompare(b.date)
-    );
-
-    // Latest close and period change per symbol, for the summary cards.
-    const summary = symbols
-      .filter((s) => bars[s]?.length)
-      .map((symbol) => {
-        const symbolBars = bars[symbol];
-        const first = symbolBars[0].c;
-        const last = symbolBars[symbolBars.length - 1].c;
-        return {
-          symbol,
-          last,
-          change: last - first,
-          changePct: first ? ((last - first) / first) * 100 : 0,
-          bars: symbolBars.length,
-        };
-      });
+    const series = reshapeBars(bars);
+    const summary = summarize(bars, symbols);
 
     return NextResponse.json({
       symbols: summary.map((s) => s.symbol),
@@ -98,6 +71,7 @@ export async function GET(request) {
       series,
       window: { start: query.get('start'), end: query.get('end') },
     });
+
   } catch (err) {
     return NextResponse.json(
       { error: 'Request to Alpaca failed', detail: String(err) },
