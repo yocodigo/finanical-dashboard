@@ -1,45 +1,18 @@
-// import { Suspense } from 'react';
-// import FinancialSection from '@/components/FinancialSection';
-// import NewsSection from '@/components/NewsSection'; 
-// import GeopoliticalSection from '@/components/GeopoliticalSection';
-// import LoadingSpinner from '@/components/ui/LoadingSpinner';
-
-// export default function Home() {
-//   return (
-//     <main className="flex h-screen overflow-hidden bg-gray-100 dark:bg-gray-900">
-//       {/* Financial Section - 1/3 width */}
-//       <section className="w-1/3 h-full overflow-y-auto border-r border-gray-200 dark:border-gray-700">
-//         <Suspense fallback={<LoadingSpinner />}>
-//           <FinancialSection />
-//         </Suspense>
-//       </section>
-      
-//       {/* Financial News Section - 1/3 width */}
-//       <section className="w-1/3 h-full overflow-y-auto border-r border-gray-200 dark:border-gray-700">
-//         <Suspense fallback={<LoadingSpinner />}>
-//           <NewsSection />
-//         </Suspense>
-//       </section>
-      
-//       {/* Geopolitical News Section - 1/3 width */}
-//       <section className="w-1/3 h-full overflow-y-auto">
-//         <Suspense fallback={<LoadingSpinner />}>
-//           <GeopoliticalSection />
-//         </Suspense>
-//       </section>
-//     </main>
-//   );
-// }
-
-'use client';
-
-import React from 'react';
+import PriceChart from '@/components/PriceChart';
 
 export default function Home() {
   return (
-    <div>
-      <h1>Financial Dashboard</h1>
-      <p>This is a test page</p>
-    </div>
+    <main className="mx-auto max-w-6xl px-6 py-10">
+      <header className="mb-8">
+        <h1 className="text-2xl font-semibold text-gray-900">
+          Financial Dashboard
+        </h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Daily price history pulled from the Alpaca Market Data API.
+        </p>
+      </header>
+
+      <PriceChart />
+    </main>
   );
 }
