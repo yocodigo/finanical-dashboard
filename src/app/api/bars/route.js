@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { reshapeBars, summarize } from '@/lib/bars';
 import { parseBarsParams } from '@/lib/params';
 import { correlationMatrix } from '@/lib/correlation';
+import { rateLimit, clientKey } from '@/lib/rateLimit';
 
 const DATA_URL = 'https://data.alpaca.markets/v2/stocks/bars';
 
@@ -10,6 +11,14 @@ const DATA_URL = 'https://data.alpaca.markets/v2/stocks/bars';
 export async function GET(request) {
   const keyId = process.env.ALPACA_KEY_ID;
   const secretKey = process.env.ALPACA_SECRET_KEY;
+  const limit = rateLimit(clientKey(request));
+
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please slow down.' },
+      { status: 429 }
+    );
+  }
 
   if (!keyId || !secretKey) {
     return NextResponse.json(
