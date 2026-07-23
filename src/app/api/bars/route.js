@@ -55,9 +55,11 @@ export async function GET(request) {
         });
 
         if (!res.ok) {
+        // Log full detail server-side; return only a status to the client.
       const detail = await res.text();
+      console.error(`Alpaca bars error ${res.status}: ${detail.slice(0, 500)}`);
       return NextResponse.json(
-        { error: `Alpaca returned ${res.status}`, detail: detail.slice(0, 500) },
+        { error: `Upstream data provider returned ${res.status}` },
         { status: res.status }
       );
     }
@@ -84,7 +86,7 @@ export async function GET(request) {
 
   } catch (err) {
     return NextResponse.json(
-      { error: 'Request to Alpaca failed', detail: String(err) },
+      { error: 'Request to data provider failed' },
       { status: 502 }
     );
   }
