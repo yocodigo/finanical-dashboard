@@ -3,7 +3,8 @@ import { mapPositions } from '@/lib/positions';
 import { concentration } from '@/lib/risk';
 
 // Note: positions live on the trading host, NOT the market-data host.
-const TRADING_URL = 'https://api.alpaca.markets/v2/positions';
+const TRADING_HOST = process.env.ALPACA_TRADING_HOST || 'https://paper-api.alpaca.markets';
+const TRADING_URL = `${TRADING_HOST}/v2/positions`;
 
 // Fetch the account's open positions and derive concentration metrics.
 export async function GET() {

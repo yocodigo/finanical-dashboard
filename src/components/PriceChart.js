@@ -45,6 +45,7 @@ export default function PriceChart() {
           </label>
           <input
             id="symbols"
+            suppressHydrationWarning
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && apply()}
@@ -59,6 +60,7 @@ export default function PriceChart() {
           </label>
           <select
             id="days"
+            suppressHydrationWarning
             value={days}
             onChange={(e) => setDays(Number(e.target.value))}
             className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
