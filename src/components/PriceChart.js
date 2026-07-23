@@ -12,6 +12,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import CorrelationHeatmap from './CorrelationHeatmap';
 
 const COLORS = ['#2563eb', '#dc2626', '#059669', '#d97706', '#7c3aed'];
 
@@ -109,6 +110,10 @@ export default function PriceChart() {
             </div>
           ))}
         </div>
+      )}
+
+      {data?.correlation && Object.keys(data.correlation).length > 1 && (
+        <CorrelationHeatmap matrix={data.correlation} />
       )}
 
       {data?.series?.length > 0 && (
