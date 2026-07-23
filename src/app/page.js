@@ -1,4 +1,5 @@
 import PriceChart from '@/components/PriceChart';
+import PortfolioRisk from '@/components/PortfolioRisk';
 
 export default function Home() {
   return (
@@ -13,6 +14,9 @@ export default function Home() {
       </header>
 
       <PriceChart />
+      <div className="mt-8">
+        <PortfolioRisk />
+      </div>
     </main>
   );
 }
