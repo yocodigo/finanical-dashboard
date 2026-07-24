@@ -1,52 +1,86 @@
 # Financial Dashboard
 
-A personal market data dashboard built on the [Alpaca Market Data API](https://docs.alpaca.markets/docs/about-market-data-api). Fetches daily price history for a set of symbols and charts them together.
+A portfolio-aware market data dashboard built on the [Alpaca APIs](https://docs.alpaca.markets/). It charts price history for a set of symbols, surfaces how those symbols move together, and — when connected to an account with open positions — describes the concentration and risk profile of the portfolio itself.
 
-Built with Next.js 14 (App Router), Tailwind, SWR, and Recharts.
+The emphasis is analytical, not advisory: the app describes properties of the data and the portfolio (returns, correlation, concentration, unrealized P&L). It does not generate trade signals or recommendations.
+
+Built with Next.js 14 (App Router), Tailwind, SWR, and Recharts. Core logic is covered by unit tests (Vitest).
 
 ## What works today
 
-- **`/api/bars`** — server-side route that authenticates against Alpaca and pulls daily bars for up to 10 symbols. API credentials stay server-side and are never exposed to the browser.
-- **Multi-symbol chart** — closes for each symbol merged into a single time-ordered series and rendered as an overlaid line chart.
+**Market data**
+- **`/api/bars`** — server-side route that authenticates against Alpaca and pulls daily bars for up to 10 symbols. Credentials stay server-side and are never exposed to the browser. Request parameters are validated with a Zod schema; responses are cached with a revalidation window to reduce load on the upstream API.
+- **Multi-symbol chart** — per-symbol closes merged into a single time-ordered series and rendered as an overlaid line chart.
 - **Summary cards** — latest close and percent change over the selected window for each symbol.
-- **Adjustable inputs** — comma-separated symbol list and a 30/90/180/365-day window.
+- **Return correlation heatmap** — pairwise Pearson correlation of daily returns across the selected symbols, so you can see which names move together over the window.
+- **Adjustable inputs** — comma-separated symbol list and a 30 / 90 / 180 / 365-day window.
 
-## Not built yet
+**Portfolio**
+- **`/api/positions`** — server-side route that fetches the account's open positions from the Alpaca trading API and derives concentration metrics. Defaults to the paper trading host; configurable via environment variable.
+- **Risk panel** — per-position weight by market value, unrealized P&L, and a callout for the single largest holding (concentration risk).
 
-- Portfolio position tracking and P&L
-- Order submission and lifecycle tracking
-- Persistence (no database — every request hits Alpaca live)
-- Financial news and geopolitical feeds
-- Backtesting
+**Cross-cutting**
+- Input validation at the route boundary (Zod).
+- In-memory rate limiting on the API routes (sufficient for a small demo; see notes below).
+- Upstream error details are logged server-side and not leaked to the client.
+
+## Architecture
+
+Pure logic lives in `src/lib/` and is unit-tested in isolation from the routes and UI:
+
+- `bars.js` — reshapes raw Alpaca bars into a charting series and computes per-symbol summaries.
+- `correlation.js` — daily returns and the pairwise correlation matrix.
+- `risk.js` — volatility (standard deviation) and portfolio concentration by market value.
+- `positions.js` — maps Alpaca's string-typed position fields into a numeric, camelCase shape.
+- `params.js` — request parameter validation.
+- `rateLimit.js` — fixed-window rate limiter.
+
+Route handlers in `src/app/api/` stay thin: authenticate, fetch, delegate to `lib/`, return JSON. Components in `src/components/` are presentational and fetch through SWR.
+
+## Testing
+
+```bash
+npm test          # watch mode
+npm run test:run  # single run
+```
+
+Tests focus on the deterministic core — bar reshaping, correlation, risk, and parameter validation — where they carry the most signal.
 
 ## Setup
 
-Requires Node 18+ and an Alpaca account. Paper trading keys are free and work for market data.
+Requires Node 18+ and an Alpaca account. Paper trading keys are free and work for both market data and positions.
 
 ```bash
 npm install
-cp .env.local.example .env.local   # then add your keys
+cp .env.example .env.local   # then add your keys
 npm run dev
 ```
 
 Open http://localhost:3000.
 
-Generate keys at https://app.alpaca.markets/ under "API Keys".
+### Environment variables
 
-## Notes
+| Variable | Description |
+| --- | --- |
+| `ALPACA_KEY_ID` | Alpaca API key ID. Paper keys start with `PK`. |
+| `ALPACA_SECRET_KEY` | Alpaca API secret. |
+| `ALPACA_TRADING_HOST` | Trading host. `https://paper-api.alpaca.markets` (paper) or `https://api.alpaca.markets` (live). Must match the keys above. |
 
-- Uses the **IEX** feed, which is what free Alpaca accounts get. It covers a single exchange, so volume is lower than consolidated SIP data and some thinly traded symbols may have gaps.
-- The request window ends yesterday rather than today, since the free feed is delayed.
-- Bars are fetched live on each request. No caching layer yet.
+Generate keys at https://app.alpaca.markets/ under "API Keys". Paper and live are separate environments with separate keys — a key/host mismatch returns HTTP 401.
 
-## Structure
+> The positions panel shows "No open positions" until the connected account holds some. On a paper account, open a few positions from the Alpaca dashboard to populate the risk and correlation views.
 
-```
-src/
-  app/
-    api/bars/route.js    Alpaca proxy — auth, fetch, reshape
-    page.js              Dashboard page
-    layout.js            Root layout
-  components/
-    PriceChart.js        Chart, summary cards, controls
-```
+## Not built yet
+
+- Order submission and lifecycle tracking
+- Persistence (no database — every request hits Alpaca live)
+- Correlation weighted by actual position sizes (portfolio-weighted, not just symbol-level)
+- Intraday timeframes and watchlists
+- Backtesting
+- Financial news and geopolitical feeds
+
+## Notes and limitations
+
+- **Rate limiting is in-memory and per-process** — fine for local use and a small demo. For real deployment across serverless instances, back it with a shared store (e.g. Redis).
+- **Data feed** — uses Alpaca's IEX feed, which is delayed. The chart window ends yesterday to avoid requesting bars that don't exist yet.
+- **Not investment advice** — the app surfaces descriptive statistics about market data and a portfolio. It does not recommend trades.
